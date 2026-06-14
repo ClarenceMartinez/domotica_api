@@ -9,6 +9,14 @@ use App\Models\Device;
 
 class DeviceController extends Controller
 {
+    /**
+     * List devices for an address.
+     *
+     * Returns every device registered under the given address with its current state and settings.
+     * Consumed by the Vue panel.
+     *
+     * @tags Devices
+     */
     public function index(int $address_id)
     {
         Address::findOrFail($address_id);

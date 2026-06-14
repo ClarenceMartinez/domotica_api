@@ -18,6 +18,27 @@ class AddressController extends Controller
 
     private const ACTIVE_STATUSES = ['on', 'open', 'active'];
 
+    /**
+     * Get grouped device state for an address.
+     *
+     * Returns the full device state grouped by type, ready for the Raspberry Pi to consume.
+     * The RPi polls this endpoint to know what to actuate on its GPIO pins.
+     * Device names are used as keys within each group.
+     *
+     * @tags Addresses
+     * @response array{
+     *   success: bool,
+     *   address_id: int,
+     *   commands: array{
+     *     lights?: array<string, bool>,
+     *     blinds?: array<string, int>,
+     *     heating?: array<string, array{status: bool, target_temperature?: float}>,
+     *     sensors?: array<string, bool>,
+     *     cameras?: array<string, bool>
+     *   },
+     *   mode: string
+     * }
+     */
     public function state(int $address_id)
     {
         $address = Address::with('devices')->findOrFail($address_id);

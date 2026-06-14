@@ -10,6 +10,16 @@ use App\Models\Device;
 
 class CommandController extends Controller
 {
+    /**
+     * Send a command to a device.
+     *
+     * Executes an action on a device and persists the resulting state.
+     * Use `set_temperature` (heating) or `set_position` (blind) to update settings
+     * without changing the on/off status — these require a `settings` object in the body.
+     *
+     * @tags Commands
+     * @response array{device: DeviceResource, action: string}
+     */
     public function store(StoreCommandRequest $request)
     {
         $device = Device::findOrFail($request->device_id);

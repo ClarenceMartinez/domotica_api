@@ -1,0 +1,328 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Casa Inteligente \u2014 API",
+        "version": "0.0.1",
+        "description": "API REST del sistema de dom\u00f3tica Casa Inteligente. Consumida por el panel Vue y el Raspberry Pi."
+    },
+    "servers": [
+        {
+            "url": "http://localhost/api"
+        }
+    ],
+    "paths": {
+        "/addresses/{address_id}/state": {
+            "get": {
+                "operationId": "address.state",
+                "description": "Returns the full device state grouped by type, ready for the Raspberry Pi to consume.\nThe RPi polls this endpoint to know what to actuate on its GPIO pins.\nDevice names are used as keys within each group.",
+                "summary": "Get grouped device state for an address",
+                "tags": [
+                    "Address"
+                ],
+                "parameters": [
+                    {
+                        "name": "address_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "address_id": {
+                                            "type": "integer"
+                                        },
+                                        "commands": {
+                                            "type": "object",
+                                            "properties": {
+                                                "lights": {
+                                                    "type": "object",
+                                                    "additionalProperties": {
+                                                        "type": "boolean"
+                                                    }
+                                                },
+                                                "blinds": {
+                                                    "type": "object",
+                                                    "additionalProperties": {
+                                                        "type": "integer"
+                                                    }
+                                                },
+                                                "heating": {
+                                                    "type": "object",
+                                                    "additionalProperties": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "status": {
+                                                                "type": "boolean"
+                                                            },
+                                                            "target_temperature": {
+                                                                "type": "number"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "status"
+                                                        ]
+                                                    }
+                                                },
+                                                "sensors": {
+                                                    "type": "object",
+                                                    "additionalProperties": {
+                                                        "type": "boolean"
+                                                    }
+                                                },
+                                                "cameras": {
+                                                    "type": "object",
+                                                    "additionalProperties": {
+                                                        "type": "boolean"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "mode": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "success",
+                                        "address_id",
+                                        "commands",
+                                        "mode"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    }
+                }
+            }
+        },
+        "/commands": {
+            "post": {
+                "operationId": "command.store",
+                "description": "Executes an action on a device and persists the resulting state.\nUse `set_temperature` (heating) or `set_position` (blind) to update settings\nwithout changing the on/off status \u2014 these require a `settings` object in the body.",
+                "summary": "Send a command to a device",
+                "tags": [
+                    "Command"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreCommandRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "device": {
+                                            "$ref": "#/components/schemas/DeviceResource"
+                                        },
+                                        "action": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "device",
+                                        "action"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/devices/{address_id}": {
+            "get": {
+                "operationId": "device.index",
+                "description": "Returns every device registered under the given address with its current state and settings.\nConsumed by the Vue panel.",
+                "summary": "List devices for an address",
+                "tags": [
+                    "Device"
+                ],
+                "parameters": [
+                    {
+                        "name": "address_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `DeviceResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/DeviceResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "DeviceResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "type": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "settings": {
+                        "type": "array",
+                        "items": {}
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "type",
+                    "status",
+                    "settings"
+                ],
+                "title": "DeviceResource"
+            },
+            "StoreCommandRequest": {
+                "type": "object",
+                "properties": {
+                    "device_id": {
+                        "type": "integer"
+                    },
+                    "action": {
+                        "type": "string",
+                        "enum": [
+                            "turn_on",
+                            "turn_off",
+                            "open",
+                            "close",
+                            "activate",
+                            "deactivate",
+                            "set_temperature",
+                            "set_position"
+                        ]
+                    },
+                    "settings": {
+                        "type": "object",
+                        "properties": {
+                            "target_temperature": {
+                                "type": "number",
+                                "minimum": 10,
+                                "maximum": 35
+                            },
+                            "position": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 100
+                            }
+                        }
+                    }
+                },
+                "required": [
+                    "device_id",
+                    "action"
+                ],
+                "title": "StoreCommandRequest"
+            }
+        },
+        "responses": {
+            "ModelNotFoundException": {
+                "description": "Not found",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Error overview."
+                                }
+                            },
+                            "required": [
+                                "message"
+                            ]
+                        }
+                    }
+                }
+            },
+            "ValidationException": {
+                "description": "Validation error",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Errors overview."
+                                },
+                                "errors": {
+                                    "type": "object",
+                                    "description": "A detailed description of each field that failed validation.",
+                                    "additionalProperties": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            },
+                            "required": [
+                                "message",
+                                "errors"
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
