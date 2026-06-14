@@ -4,10 +4,10 @@
         <!-- Selector bar -->
         <div class="flex items-center gap-3 mb-6">
             <div class="relative">
-                <select v-model="clienteId" @change="onClienteChange"
+                <select v-model="clientId" @change="onClientChange"
                         class="appearance-none bg-[#111827] border border-gray-700 text-sm text-white rounded-lg px-4 py-2.5 pr-9 focus:outline-none focus:border-blue-500 cursor-pointer min-w-44">
-                    <option value="">Seleccionar cliente</option>
-                    <option v-for="c in clientes" :key="c.id" :value="c.id">{{ c.nombre }}</option>
+                    <option value="">Select client</option>
+                    <option v-for="c in clients" :key="c.id" :value="c.id">{{ c.name }}</option>
                 </select>
                 <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"
                      fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -16,11 +16,11 @@
             </div>
 
             <div class="relative">
-                <select v-model="direccionId" @change="onDireccionChange"
-                        :disabled="!clienteId || direccionesDelCliente.length === 0"
+                <select v-model="addressId" @change="onAddressChange"
+                        :disabled="!clientId || clientAddresses.length === 0"
                         class="appearance-none bg-[#111827] border border-gray-700 text-sm text-white rounded-lg px-4 py-2.5 pr-9 focus:outline-none focus:border-blue-500 cursor-pointer min-w-52 disabled:opacity-40 disabled:cursor-not-allowed">
-                    <option value="">Seleccionar inmueble</option>
-                    <option v-for="d in direccionesDelCliente" :key="d.id" :value="d.id">{{ d.alias }}</option>
+                    <option value="">Select property</option>
+                    <option v-for="a in clientAddresses" :key="a.id" :value="a.id">{{ a.alias }}</option>
                 </select>
                 <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"
                      fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -30,21 +30,18 @@
         </div>
 
         <!-- Empty state -->
-        <div v-if="!direccionId" class="flex flex-col items-center justify-center py-24 text-center">
+        <div v-if="!addressId" class="flex flex-col items-center justify-center py-24 text-center">
             <div class="w-14 h-14 bg-[#111827] border border-gray-800 rounded-2xl flex items-center justify-center mb-4">
                 <svg class="w-7 h-7 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                           d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                 </svg>
             </div>
-            <p class="text-sm text-gray-500">Seleccioná un cliente y un inmueble para ver el panel.</p>
+            <p class="text-sm text-gray-500">Select a client and a property to view the panel.</p>
         </div>
 
-        <!-- Dashboard content -->
         <template v-else>
-
-            <!-- Loading overlay -->
-            <div v-if="cargando" class="flex items-center justify-center py-24">
+            <div v-if="loading" class="flex items-center justify-center py-24">
                 <div class="w-6 h-6 border-2 border-gray-700 border-t-blue-500 rounded-full animate-spin"></div>
             </div>
 
@@ -53,89 +50,71 @@
                 <!-- Stats row -->
                 <div class="grid grid-cols-4 gap-4 mb-6">
 
-                    <!-- Clima exterior (placeholder) -->
+                    <!-- Climate (placeholder) -->
                     <div class="bg-[#111827] border border-gray-800 rounded-xl p-5 relative overflow-hidden">
-                        <p class="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-3">Clima exterior</p>
-                        <div v-if="clima" class="space-y-1">
-                            <div class="flex items-end gap-2">
-                                <span class="text-3xl font-bold text-white">{{ clima.temp }}°C</span>
-                            </div>
-                            <p class="text-sm text-gray-400">{{ clima.descripcion }}</p>
-                            <p class="text-xs text-gray-600 mt-2">
-                                Humedad: {{ clima.humedad }}% · Viento: {{ clima.viento }} km/h
-                            </p>
+                        <p class="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-3">Outside climate</p>
+                        <div v-if="climate">
+                            <p class="text-3xl font-bold text-white">{{ climate.temp }}°C</p>
+                            <p class="text-sm text-gray-400">{{ climate.description }}</p>
+                            <p class="text-xs text-gray-600 mt-2">Humidity: {{ climate.humidity }}% · Wind: {{ climate.wind }} km/h</p>
                         </div>
                         <div v-else class="space-y-2">
-                            <div class="flex items-end gap-2">
-                                <span class="text-3xl font-bold text-gray-700">—°C</span>
-                            </div>
-                            <p class="text-xs text-gray-700">Humedad: — · Viento: —</p>
-                            <span class="inline-block text-[10px] font-medium bg-gray-800 text-gray-600 px-2 py-0.5 rounded-full mt-1">
-                                Próximamente
-                            </span>
+                            <p class="text-3xl font-bold text-gray-700">—°C</p>
+                            <p class="text-xs text-gray-700">Humidity: — · Wind: —</p>
+                            <span class="inline-block text-[10px] font-medium bg-gray-800 text-gray-600 px-2 py-0.5 rounded-full mt-1">Coming soon</span>
                         </div>
                         <svg class="absolute right-4 bottom-4 w-10 h-10 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
-                                  d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
                         </svg>
                     </div>
 
-                    <!-- Consumo eléctrico (placeholder) -->
+                    <!-- Power consumption (placeholder) -->
                     <div class="bg-[#111827] border border-gray-800 rounded-xl p-5 relative overflow-hidden">
-                        <p class="text-xs font-semibold text-green-400 uppercase tracking-wider mb-3">Consumo eléctrico</p>
-                        <div v-if="consumo">
-                            <p class="text-3xl font-bold text-white">{{ consumo.actual }} kW</p>
-                            <p class="text-xs text-gray-500 mt-1">Hoy: {{ consumo.hoy }} kWh</p>
+                        <p class="text-xs font-semibold text-green-400 uppercase tracking-wider mb-3">Power usage</p>
+                        <div v-if="consumption">
+                            <p class="text-3xl font-bold text-white">{{ consumption.current }} kW</p>
+                            <p class="text-xs text-gray-500 mt-1">Today: {{ consumption.today }} kWh</p>
                         </div>
                         <div v-else class="space-y-2">
                             <p class="text-3xl font-bold text-gray-700">— kW</p>
-                            <p class="text-xs text-gray-700">Hoy: — kWh</p>
-                            <span class="inline-block text-[10px] font-medium bg-gray-800 text-gray-600 px-2 py-0.5 rounded-full mt-1">
-                                Próximamente
-                            </span>
+                            <p class="text-xs text-gray-700">Today: — kWh</p>
+                            <span class="inline-block text-[10px] font-medium bg-gray-800 text-gray-600 px-2 py-0.5 rounded-full mt-1">Coming soon</span>
                         </div>
                         <svg class="absolute right-4 bottom-4 w-10 h-10 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                         </svg>
                     </div>
 
-                    <!-- Temperatura interior (placeholder) -->
+                    <!-- Indoor temperature (placeholder) -->
                     <div class="bg-[#111827] border border-gray-800 rounded-xl p-5 relative overflow-hidden">
-                        <p class="text-xs font-semibold text-orange-400 uppercase tracking-wider mb-3">Temperatura interior</p>
-                        <div v-if="temperatura">
-                            <p class="text-3xl font-bold text-white">{{ temperatura.valor }}°C</p>
-                            <p class="text-xs text-gray-500 mt-1">{{ temperatura.lugar }}</p>
+                        <p class="text-xs font-semibold text-orange-400 uppercase tracking-wider mb-3">Indoor temperature</p>
+                        <div v-if="temperature">
+                            <p class="text-3xl font-bold text-white">{{ temperature.value }}°C</p>
+                            <p class="text-xs text-gray-500 mt-1">{{ temperature.location }}</p>
                         </div>
                         <div v-else class="space-y-2">
                             <p class="text-3xl font-bold text-gray-700">—°C</p>
-                            <p class="text-xs text-gray-700">Sin sensor conectado</p>
-                            <span class="inline-block text-[10px] font-medium bg-gray-800 text-gray-600 px-2 py-0.5 rounded-full mt-1">
-                                Próximamente
-                            </span>
+                            <p class="text-xs text-gray-700">No sensor connected</p>
+                            <span class="inline-block text-[10px] font-medium bg-gray-800 text-gray-600 px-2 py-0.5 rounded-full mt-1">Coming soon</span>
                         </div>
                         <svg class="absolute right-4 bottom-4 w-10 h-10 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
-                                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                         </svg>
                     </div>
 
-                    <!-- Estado de la casa (computed real) -->
+                    <!-- Home status (computed) -->
                     <div class="bg-[#111827] border rounded-xl p-5 relative overflow-hidden"
-                         :class="estadoCasa.seguro ? 'border-gray-800' : 'border-red-900/50'">
+                         :class="homeStatus.safe ? 'border-gray-800' : 'border-red-900/50'">
                         <p class="text-xs font-semibold uppercase tracking-wider mb-3"
-                           :class="estadoCasa.seguro ? 'text-yellow-400' : 'text-red-400'">
-                            Estado de la casa
+                           :class="homeStatus.safe ? 'text-yellow-400' : 'text-red-400'">Home status</p>
+                        <p class="text-xl font-bold" :class="homeStatus.safe ? 'text-white' : 'text-red-400'">
+                            {{ homeStatus.text }}
                         </p>
-                        <p class="text-xl font-bold"
-                           :class="estadoCasa.seguro ? 'text-white' : 'text-red-400'">
-                            {{ estadoCasa.texto }}
-                        </p>
-                        <p class="text-xs mt-1"
-                           :class="estadoCasa.seguro ? 'text-gray-500' : 'text-red-600'">
-                            {{ estadoCasa.detalle }}
+                        <p class="text-xs mt-1" :class="homeStatus.safe ? 'text-gray-500' : 'text-red-600'">
+                            {{ homeStatus.detail }}
                         </p>
                         <svg class="absolute right-4 bottom-4 w-10 h-10"
-                             :class="estadoCasa.seguro ? 'text-gray-800' : 'text-red-900'"
+                             :class="homeStatus.safe ? 'text-gray-800' : 'text-red-900'"
                              fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
                                   d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
@@ -147,142 +126,128 @@
                 <!-- Main panels -->
                 <div class="grid grid-cols-3 gap-4 mb-4">
 
-                    <!-- LUCES -->
+                    <!-- LIGHTS -->
                     <div class="bg-[#111827] border border-gray-800 rounded-xl p-5 flex flex-col">
                         <div class="flex items-center gap-2 mb-4">
                             <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                       d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
                             </svg>
-                            <h3 class="text-sm font-bold text-white uppercase tracking-wide">Luces</h3>
+                            <h3 class="text-sm font-bold text-white uppercase tracking-wide">Lights</h3>
                         </div>
-
-                        <div v-if="luces.length === 0" class="flex-1 flex items-center justify-center">
-                            <p class="text-xs text-gray-600">Sin luces registradas</p>
+                        <div v-if="lights.length === 0" class="flex-1 flex items-center justify-center">
+                            <p class="text-xs text-gray-600">No lights registered</p>
                         </div>
                         <ul v-else class="space-y-3 flex-1">
-                            <li v-for="d in luces" :key="d.id"
-                                class="flex items-center justify-between">
+                            <li v-for="d in lights" :key="d.id" class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-sm font-medium text-white">{{ d.nombre }}</p>
-                                    <p class="text-xs" :class="activo(d) ? 'text-green-400' : 'text-gray-600'">
-                                        {{ capitalizar(d.estado) }}
+                                    <p class="text-sm font-medium text-white">{{ d.name }}</p>
+                                    <p class="text-xs" :class="isActive(d) ? 'text-green-400' : 'text-gray-600'">
+                                        {{ capitalize(d.status) }}
                                     </p>
                                 </div>
-                                <button @click="toggle(d)" :disabled="!!enviando[d.id]"
+                                <button @click="toggle(d)" :disabled="!!sending[d.id]"
                                         class="relative inline-flex h-5 w-9 rounded-full transition-colors focus:outline-none disabled:opacity-50"
-                                        :class="activo(d) ? 'bg-blue-600' : 'bg-gray-700'">
+                                        :class="isActive(d) ? 'bg-blue-600' : 'bg-gray-700'">
                                     <span class="inline-block w-3.5 h-3.5 transform rounded-full bg-white transition-transform mt-[3px]"
-                                          :class="activo(d) ? 'translate-x-4' : 'translate-x-1'"></span>
+                                          :class="isActive(d) ? 'translate-x-4' : 'translate-x-1'"></span>
                                 </button>
                             </li>
                         </ul>
-
-                        <a :href="`/direcciones/${direccionId}`"
+                        <a :href="`/addresses/${addressId}`"
                            class="mt-4 w-full text-center text-xs font-semibold text-blue-400 hover:text-blue-300 border border-blue-900/50 hover:border-blue-700 rounded-lg py-2 transition-colors">
-                            Ver todas las luces
+                            View all devices
                         </a>
                     </div>
 
-                    <!-- PERSIANAS -->
+                    <!-- BLINDS -->
                     <div class="bg-[#111827] border border-gray-800 rounded-xl p-5 flex flex-col">
                         <div class="flex items-center gap-2 mb-4">
                             <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
                             </svg>
-                            <h3 class="text-sm font-bold text-white uppercase tracking-wide">Persianas</h3>
+                            <h3 class="text-sm font-bold text-white uppercase tracking-wide">Blinds</h3>
                         </div>
-
-                        <div v-if="persianas.length === 0" class="flex-1 flex items-center justify-center">
-                            <p class="text-xs text-gray-600">Sin persianas registradas</p>
+                        <div v-if="blinds.length === 0" class="flex-1 flex items-center justify-center">
+                            <p class="text-xs text-gray-600">No blinds registered</p>
                         </div>
                         <ul v-else class="space-y-3 flex-1">
-                            <li v-for="d in persianas" :key="d.id">
+                            <li v-for="d in blinds" :key="d.id">
                                 <div class="flex items-center justify-between mb-1.5">
-                                    <p class="text-sm font-medium text-white">{{ d.nombre }}</p>
-                                    <span class="text-xs" :class="activo(d) ? 'text-green-400' : 'text-gray-600'">
-                                        {{ capitalizar(d.estado) }}
+                                    <p class="text-sm font-medium text-white">{{ d.name }}</p>
+                                    <span class="text-xs" :class="isActive(d) ? 'text-green-400' : 'text-gray-600'">
+                                        {{ capitalize(d.status) }}
                                     </span>
                                 </div>
                                 <div class="flex gap-2">
-                                    <button @click="enviarComando(d, 'abrir')"
-                                            :disabled="d.estado === 'abierto' || !!enviando[d.id]"
-                                            class="flex-1 text-xs font-medium py-1.5 rounded-lg border transition-colors disabled:opacity-30 disabled:cursor-not-allowed
-                                                   border-green-800/60 text-green-400 hover:bg-green-900/30">
-                                        Abrir
+                                    <button @click="sendCommand(d, 'open')"
+                                            :disabled="d.status === 'open' || !!sending[d.id]"
+                                            class="flex-1 text-xs font-medium py-1.5 rounded-lg border transition-colors disabled:opacity-30 disabled:cursor-not-allowed border-green-800/60 text-green-400 hover:bg-green-900/30">
+                                        Open
                                     </button>
-                                    <button @click="enviarComando(d, 'cerrar')"
-                                            :disabled="d.estado === 'cerrado' || !!enviando[d.id]"
-                                            class="flex-1 text-xs font-medium py-1.5 rounded-lg border transition-colors disabled:opacity-30 disabled:cursor-not-allowed
-                                                   border-gray-700 text-gray-400 hover:bg-gray-800">
-                                        Cerrar
+                                    <button @click="sendCommand(d, 'close')"
+                                            :disabled="d.status === 'closed' || !!sending[d.id]"
+                                            class="flex-1 text-xs font-medium py-1.5 rounded-lg border transition-colors disabled:opacity-30 disabled:cursor-not-allowed border-gray-700 text-gray-400 hover:bg-gray-800">
+                                        Close
                                     </button>
                                 </div>
                             </li>
                         </ul>
-
                         <div class="mt-4 w-full text-center text-xs font-semibold text-gray-600 border border-gray-800 rounded-lg py-2 cursor-not-allowed select-none">
-                            Modo automático
-                            <span class="text-[10px] text-gray-700 ml-1">(próximamente)</span>
+                            Auto mode <span class="text-[10px] text-gray-700 ml-1">(coming soon)</span>
                         </div>
                     </div>
 
-                    <!-- SEGURIDAD -->
+                    <!-- SECURITY -->
                     <div class="bg-[#111827] border border-gray-800 rounded-xl p-5 flex flex-col">
                         <div class="flex items-center gap-2 mb-4">
                             <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                       d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                             </svg>
-                            <h3 class="text-sm font-bold text-white uppercase tracking-wide">Seguridad</h3>
+                            <h3 class="text-sm font-bold text-white uppercase tracking-wide">Security</h3>
                         </div>
-
-                        <div v-if="seguridad.length === 0" class="flex-1 flex items-center justify-center">
-                            <p class="text-xs text-gray-600">Sin sensores registrados</p>
+                        <div v-if="security.length === 0" class="flex-1 flex items-center justify-center">
+                            <p class="text-xs text-gray-600">No sensors registered</p>
                         </div>
                         <ul v-else class="space-y-3 flex-1">
-                            <li v-for="d in seguridad" :key="d.id"
-                                class="flex items-center justify-between">
+                            <li v-for="d in security" :key="d.id" class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-sm font-medium text-white">{{ d.nombre }}</p>
-                                    <p class="text-xs text-gray-500">{{ labels[d.tipo] }}</p>
+                                    <p class="text-sm font-medium text-white">{{ d.name }}</p>
+                                    <p class="text-xs text-gray-500">{{ labels[d.type] }}</p>
                                 </div>
                                 <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full"
-                                      :class="activo(d)
+                                      :class="isActive(d)
                                           ? 'bg-red-900/40 text-red-400 border border-red-800/40'
                                           : 'bg-gray-800 text-gray-500 border border-gray-700'">
-                                    <span class="w-1.5 h-1.5 rounded-full"
-                                          :class="activo(d) ? 'bg-red-400' : 'bg-gray-600'"></span>
-                                    {{ capitalizar(d.estado) }}
+                                    <span class="w-1.5 h-1.5 rounded-full" :class="isActive(d) ? 'bg-red-400' : 'bg-gray-600'"></span>
+                                    {{ capitalize(d.status) }}
                                 </span>
                             </li>
                         </ul>
-
                         <div class="mt-4 w-full text-center text-xs font-semibold text-gray-600 border border-gray-800 rounded-lg py-2 cursor-not-allowed select-none">
-                            Ver cámaras
-                            <span class="text-[10px] text-gray-700 ml-1">(próximamente)</span>
+                            View cameras <span class="text-[10px] text-gray-700 ml-1">(coming soon)</span>
                         </div>
                     </div>
 
                 </div>
 
-                <!-- Escenas rápidas -->
+                <!-- Scenes -->
                 <div class="bg-[#111827] border border-gray-800 rounded-xl p-5">
                     <div class="flex items-center gap-2 mb-4">
                         <svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                   d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
                         </svg>
-                        <h3 class="text-sm font-bold text-white uppercase tracking-wide">Escenas rápidas</h3>
-                        <span class="text-[10px] font-medium bg-gray-800 text-gray-600 px-2 py-0.5 rounded-full ml-1">Próximamente</span>
+                        <h3 class="text-sm font-bold text-white uppercase tracking-wide">Quick scenes</h3>
+                        <span class="text-[10px] font-medium bg-gray-800 text-gray-600 px-2 py-0.5 rounded-full ml-1">Coming soon</span>
                     </div>
                     <div class="grid grid-cols-4 gap-3">
-                        <button v-for="escena in escenas" :key="escena.label" disabled
+                        <button v-for="scene in scenes" :key="scene" disabled
                                 class="flex items-center justify-between bg-gray-800/60 border border-gray-700/50 rounded-xl px-4 py-3.5 text-left opacity-50 cursor-not-allowed">
                             <div>
-                                <p class="text-sm font-semibold text-white">{{ escena.label }}</p>
-                                <p class="text-xs text-gray-500 mt-0.5">Activar</p>
+                                <p class="text-sm font-semibold text-white">{{ scene }}</p>
+                                <p class="text-xs text-gray-500 mt-0.5">Activate</p>
                             </div>
                             <svg class="w-4 h-4 text-gray-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -302,130 +267,115 @@ import { ref, computed } from 'vue'
 import axios from 'axios'
 
 const props = defineProps({
-    clientes: { type: Array, default: () => [] },
+    clients: { type: Array, default: () => [] },
 })
 
-const clienteId   = ref('')
-const direccionId = ref('')
-const dispositivos = ref([])
-const cargando    = ref(false)
-const enviando    = ref({})
+const clientId  = ref('')
+const addressId = ref('')
+const devices   = ref([])
+const loading   = ref(false)
+const sending   = ref({})
 
-// Placeholders — listos para conectar a sus APIs
-const clima       = ref(null)   // GET /api/clima/{direccion_id}
-const consumo     = ref(null)   // GET /api/consumo/{direccion_id}
-const temperatura = ref(null)   // del sensor de calefaccion
+// Placeholders — ready to wire to their APIs
+const climate     = ref(null)   // GET /api/climate/{address_id}
+const consumption = ref(null)   // GET /api/consumption/{address_id}
+const temperature = ref(null)   // from heating sensor
 
-const escenas = [
-    { label: 'Modo Noche' },
-    { label: 'Modo Fiesta' },
-    { label: 'Salir de casa' },
-    { label: 'Llegar a casa' },
-]
+const scenes = ['Night mode', 'Party mode', 'Leaving home', 'Arriving home']
 
 const labels = {
-    luz:            'Luz',
-    persiana:       'Persiana',
-    sensor_puerta:  'Sensor de puerta',
-    sensor_ventana: 'Sensor de ventana',
-    camara:         'Cámara',
-    calefaccion:    'Calefacción',
+    light:         'Light',
+    blind:         'Blind',
+    door_sensor:   'Door sensor',
+    window_sensor: 'Window sensor',
+    camera:        'Camera',
+    heating:       'Heating',
 }
 
-const estadosActivos = ['encendido', 'abierto', 'activo']
+const activeStatuses = ['on', 'open', 'active']
 
-const accionPara = {
-    encendido: 'apagar',
-    apagado:   'encender',
-    abierto:   'cerrar',
-    cerrado:   'abrir',
-    activo:    'desactivar',
-    inactivo:  'activar',
+const actionFor = {
+    on:       'turn_off',
+    off:      'turn_on',
+    open:     'close',
+    closed:   'open',
+    active:   'deactivate',
+    inactive: 'activate',
 }
 
-const estadoNuevoPara = {
-    encender:   'encendido',
-    apagar:     'apagado',
-    abrir:      'abierto',
-    cerrar:     'cerrado',
-    activar:    'activo',
-    desactivar: 'inactivo',
+const statusFor = {
+    turn_on:    'on',
+    turn_off:   'off',
+    open:       'open',
+    close:      'closed',
+    activate:   'active',
+    deactivate: 'inactive',
 }
 
-// Computed
-const direccionesDelCliente = computed(() => {
-    if (!clienteId.value) return []
-    return props.clientes.find(c => c.id == clienteId.value)?.direcciones ?? []
+const clientAddresses = computed(() => {
+    if (!clientId.value) return []
+    return props.clients.find(c => c.id == clientId.value)?.addresses ?? []
 })
 
-const luces     = computed(() => dispositivos.value.filter(d => d.tipo === 'luz'))
-const persianas = computed(() => dispositivos.value.filter(d => d.tipo === 'persiana'))
-const seguridad = computed(() => dispositivos.value.filter(d =>
-    ['sensor_puerta', 'sensor_ventana', 'camara'].includes(d.tipo)
-))
+const lights   = computed(() => devices.value.filter(d => d.type === 'light'))
+const blinds   = computed(() => devices.value.filter(d => d.type === 'blind'))
+const security = computed(() => devices.value.filter(d => ['door_sensor', 'window_sensor', 'camera'].includes(d.type)))
 
-const estadoCasa = computed(() => {
-    const sensores = dispositivos.value.filter(d =>
-        ['sensor_puerta', 'sensor_ventana'].includes(d.tipo)
-    )
-    if (sensores.length === 0)
-        return { texto: 'Sin sensores', detalle: 'No hay sensores configurados', seguro: true }
-    const alertas = sensores.filter(d => d.estado === 'abierto' || d.estado === 'activo')
-    if (alertas.length === 0)
-        return { texto: 'Todo seguro', detalle: 'Sin alertas activas', seguro: true }
+const homeStatus = computed(() => {
+    const sensors = devices.value.filter(d => ['door_sensor', 'window_sensor'].includes(d.type))
+    if (sensors.length === 0)
+        return { text: 'No sensors', detail: 'No sensors configured', safe: true }
+    const alerts = sensors.filter(d => d.status === 'open' || d.status === 'active')
+    if (alerts.length === 0)
+        return { text: 'All secure', detail: 'No active alerts', safe: true }
     return {
-        texto:   `${alertas.length} alerta${alertas.length > 1 ? 's' : ''}`,
-        detalle: alertas.map(d => d.nombre).join(', '),
-        seguro:  false,
+        text:   `${alerts.length} alert${alerts.length > 1 ? 's' : ''}`,
+        detail: alerts.map(d => d.name).join(', '),
+        safe:   false,
     }
 })
 
-// Helpers
-function activo(d)      { return estadosActivos.includes(d.estado) }
-function capitalizar(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : '' }
+function isActive(d)   { return activeStatuses.includes(d.status) }
+function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : '' }
 
-// Handlers
-function onClienteChange() {
-    direccionId.value  = ''
-    dispositivos.value = []
-    clima.value        = null
-    consumo.value      = null
-    temperatura.value  = null
+function onClientChange() {
+    addressId.value  = ''
+    devices.value    = []
+    climate.value    = null
+    consumption.value = null
+    temperature.value = null
 }
 
-async function onDireccionChange() {
-    if (!direccionId.value) return
-    cargando.value     = true
-    dispositivos.value = []
-    clima.value        = null
-    consumo.value      = null
-    temperatura.value  = null
+async function onAddressChange() {
+    if (!addressId.value) return
+    loading.value  = true
+    devices.value  = []
+    climate.value  = null
+    consumption.value = null
+    temperature.value = null
     try {
-        const { data } = await axios.get(`/api/dispositivos/${direccionId.value}`)
-        dispositivos.value = data.data
+        const { data } = await axios.get(`/api/devices/${addressId.value}`)
+        devices.value = data.data
     } finally {
-        cargando.value = false
+        loading.value = false
     }
 }
 
-async function enviarComando(d, accion) {
-    const estadoAntes = d.estado
-    d.estado = estadoNuevoPara[accion]
-    enviando.value[d.id] = true
+async function sendCommand(d, action) {
+    const prevStatus = d.status
+    d.status = statusFor[action]
+    sending.value[d.id] = true
     try {
-        const { data } = await axios.post('/api/comandos', {
-            dispositivo_id: d.id,
-            accion,
-        })
-        d.estado = data.dispositivo.estado
+        const { data } = await axios.post('/api/commands', { device_id: d.id, action })
+        d.status = data.device.status
     } catch {
-        d.estado = estadoAntes
+        d.status = prevStatus
     } finally {
-        delete enviando.value[d.id]
+        delete sending.value[d.id]
     }
 }
 
 function toggle(d) {
-    enviarComando(d, accionPara[d.estado])
+    sendCommand(d, actionFor[d.status])
 }
 </script>

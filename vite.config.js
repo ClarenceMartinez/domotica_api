@@ -9,7 +9,7 @@ export default defineConfig({
             input: [
                 'resources/css/app.css',
                 'resources/js/app.js',
-                'resources/js/apps/luces.js',
+                'resources/js/apps/devices.js',
                 'resources/js/apps/dashboard.js',
             ],
             refresh: true,

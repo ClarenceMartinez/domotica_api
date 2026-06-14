@@ -1,7 +1,7 @@
 <x-layouts.app title="Dashboard">
 
     <div id="app-dashboard"
-         data-clientes="{{ $clientes->toJson() }}">
+         data-clients="{{ $clients->toJson() }}">
     </div>
 
     @vite(['resources/js/apps/dashboard.js'])

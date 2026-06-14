@@ -5,11 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Plan extends Model
+class Client extends Model
 {
-    protected $table = 'plans';
+    protected $table = 'clients';
 
-    protected $fillable = ['name', 'description', 'device_limit'];
+    protected $fillable = ['name', 'email', 'phone'];
 
     public function addresses(): HasMany
     {

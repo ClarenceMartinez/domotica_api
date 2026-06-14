@@ -1,22 +1,21 @@
 <?php
 
-use App\Http\Controllers\Clientes\ClienteController;
+use App\Http\Controllers\Addresses\AddressController;
+use App\Http\Controllers\Clients\ClientController;
 use App\Http\Controllers\Dashboard\DashboardController;
-use App\Http\Controllers\Direcciones\DireccionController;
-use App\Http\Controllers\Dispositivos\DispositivoController;
+use App\Http\Controllers\Devices\DeviceController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-Route::get('/clientes-redir', fn () => redirect()->route('clientes.index'))->name('clientes.redirect');
 
-Route::resource('clientes', ClienteController::class);
+Route::resource('clients', ClientController::class);
 
-Route::resource('clientes.direcciones', DireccionController::class)
+Route::resource('clients.addresses', AddressController::class)
     ->shallow()
     ->except(['index'])
-    ->parameters(['direcciones' => 'direccion']);
+    ->parameters(['addresses' => 'address']);
 
-Route::resource('direcciones.dispositivos', DispositivoController::class)
+Route::resource('addresses.devices', DeviceController::class)
     ->shallow()
     ->except(['index', 'show'])
-    ->parameters(['dispositivos' => 'dispositivo']);
+    ->parameters(['devices' => 'device']);

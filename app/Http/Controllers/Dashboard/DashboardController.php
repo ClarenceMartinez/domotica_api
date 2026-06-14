@@ -3,16 +3,16 @@
 namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
-use App\Models\Cliente;
+use App\Models\Client;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        $clientes = Cliente::with(['direcciones' => fn ($q) => $q->select('id', 'cliente_id', 'alias')])
-            ->orderBy('nombre')
-            ->get(['id', 'nombre']);
+        $clients = Client::with(['addresses' => fn ($q) => $q->select('id', 'client_id', 'alias')])
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
-        return view('dashboard.index', compact('clientes'));
+        return view('dashboard.index', compact('clients'));
     }
 }
