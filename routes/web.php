@@ -1,11 +1,13 @@
 <?php
 
 use App\Http\Controllers\Clientes\ClienteController;
+use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Direcciones\DireccionController;
 use App\Http\Controllers\Dispositivos\DispositivoController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn () => redirect()->route('clientes.index'));
+Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+Route::get('/clientes-redir', fn () => redirect()->route('clientes.index'))->name('clientes.redirect');
 
 Route::resource('clientes', ClienteController::class);
 
