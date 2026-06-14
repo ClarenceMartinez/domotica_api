@@ -15,15 +15,23 @@ class CommandController extends Controller
         $device = Device::findOrFail($request->device_id);
 
         $newStatus = match($request->action) {
-            'turn_on'    => 'on',
-            'turn_off'   => 'off',
-            'open'       => 'open',
-            'close'      => 'closed',
-            'activate'   => 'active',
-            'deactivate' => 'inactive',
+            'turn_on'        => 'on',
+            'turn_off'       => 'off',
+            'open'           => 'open',
+            'close'          => 'closed',
+            'activate'       => 'active',
+            'deactivate'     => 'inactive',
+            'set_temperature',
+            'set_position'   => $device->status,
         };
 
-        $device->update(['status' => $newStatus]);
+        $updateData = ['status' => $newStatus];
+
+        if ($request->has('settings')) {
+            $updateData['settings'] = array_merge($device->settings ?? [], $request->settings);
+        }
+
+        $device->update($updateData);
 
         CommandLog::create([
             'device_id'  => $device->id,

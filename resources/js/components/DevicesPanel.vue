@@ -44,24 +44,78 @@
                         </td>
                         <td class="px-6 py-4 text-gray-400">{{ labels[d.type] ?? d.type }}</td>
                         <td class="px-6 py-4">
-                            <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full"
-                                  :class="isActive(d)
-                                      ? 'bg-green-900/40 text-green-400 border border-green-800/40'
-                                      : 'bg-gray-800 text-gray-500 border border-gray-700'">
-                                <span class="w-1.5 h-1.5 rounded-full" :class="isActive(d) ? 'bg-green-400' : 'bg-gray-600'"></span>
-                                {{ capitalize(d.status) }}
-                            </span>
+                            <div class="flex flex-col gap-1">
+                                <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full"
+                                      :class="isActive(d)
+                                          ? 'bg-green-900/40 text-green-400 border border-green-800/40'
+                                          : 'bg-gray-800 text-gray-500 border border-gray-700'">
+                                    <span class="w-1.5 h-1.5 rounded-full" :class="isActive(d) ? 'bg-green-400' : 'bg-gray-600'"></span>
+                                    {{ capitalize(d.status) }}
+                                </span>
+                                <span v-if="d.type === 'heating' && d.settings?.target_temperature !== undefined"
+                                      class="text-xs text-gray-500 px-2.5">
+                                    Target: {{ d.settings.target_temperature }}°C
+                                </span>
+                                <span v-if="d.type === 'blind' && d.settings?.position !== undefined"
+                                      class="text-xs text-gray-500 px-2.5">
+                                    Position: {{ d.settings.position }}%
+                                </span>
+                            </div>
                         </td>
                         <td class="px-6 py-4">
                             <div class="flex items-center justify-end gap-4">
-                                <button v-if="isControllable(d.type)"
-                                        @click="toggle(d)"
-                                        :disabled="!!sending[d.id]"
-                                        class="relative inline-flex items-center h-5 w-9 rounded-full transition-colors focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                                        :class="isActive(d) ? 'bg-blue-600' : 'bg-gray-700'">
-                                    <span class="inline-block w-3.5 h-3.5 transform rounded-full bg-white transition-transform"
-                                          :class="isActive(d) ? 'translate-x-4' : 'translate-x-1'"></span>
-                                </button>
+                                <template v-if="d.type === 'heating'">
+                                    <div class="flex items-center gap-1">
+                                        <button @click="adjustTemperature(d, -1)"
+                                                :disabled="!!sending[d.id]"
+                                                class="w-6 h-6 rounded bg-gray-800 border border-gray-700 text-gray-400 hover:text-white text-sm leading-none transition-colors disabled:opacity-40">−</button>
+                                        <span class="w-12 text-center text-xs text-gray-300">
+                                            {{ d.settings?.target_temperature !== undefined ? d.settings.target_temperature + '°C' : '--' }}
+                                        </span>
+                                        <button @click="adjustTemperature(d, 1)"
+                                                :disabled="!!sending[d.id]"
+                                                class="w-6 h-6 rounded bg-gray-800 border border-gray-700 text-gray-400 hover:text-white text-sm leading-none transition-colors disabled:opacity-40">+</button>
+                                    </div>
+                                    <button @click="toggle(d)"
+                                            :disabled="!!sending[d.id]"
+                                            class="relative inline-flex items-center h-5 w-9 rounded-full transition-colors focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                            :class="isActive(d) ? 'bg-blue-600' : 'bg-gray-700'">
+                                        <span class="inline-block w-3.5 h-3.5 transform rounded-full bg-white transition-transform"
+                                              :class="isActive(d) ? 'translate-x-4' : 'translate-x-1'"></span>
+                                    </button>
+                                </template>
+
+                                <template v-else-if="d.type === 'blind'">
+                                    <div class="flex items-center gap-1">
+                                        <button @click="adjustPosition(d, -10)"
+                                                :disabled="!!sending[d.id]"
+                                                class="w-6 h-6 rounded bg-gray-800 border border-gray-700 text-gray-400 hover:text-white text-sm leading-none transition-colors disabled:opacity-40">−</button>
+                                        <span class="w-10 text-center text-xs text-gray-300">
+                                            {{ d.settings?.position !== undefined ? d.settings.position + '%' : '--' }}
+                                        </span>
+                                        <button @click="adjustPosition(d, 10)"
+                                                :disabled="!!sending[d.id]"
+                                                class="w-6 h-6 rounded bg-gray-800 border border-gray-700 text-gray-400 hover:text-white text-sm leading-none transition-colors disabled:opacity-40">+</button>
+                                    </div>
+                                    <button @click="toggle(d)"
+                                            :disabled="!!sending[d.id]"
+                                            class="relative inline-flex items-center h-5 w-9 rounded-full transition-colors focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                            :class="isActive(d) ? 'bg-blue-600' : 'bg-gray-700'">
+                                        <span class="inline-block w-3.5 h-3.5 transform rounded-full bg-white transition-transform"
+                                              :class="isActive(d) ? 'translate-x-4' : 'translate-x-1'"></span>
+                                    </button>
+                                </template>
+
+                                <template v-else-if="isControllable(d.type)">
+                                    <button @click="toggle(d)"
+                                            :disabled="!!sending[d.id]"
+                                            class="relative inline-flex items-center h-5 w-9 rounded-full transition-colors focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                            :class="isActive(d) ? 'bg-blue-600' : 'bg-gray-700'">
+                                        <span class="inline-block w-3.5 h-3.5 transform rounded-full bg-white transition-transform"
+                                              :class="isActive(d) ? 'translate-x-4' : 'translate-x-1'"></span>
+                                    </button>
+                                </template>
+
                                 <span v-else class="text-xs text-gray-600">Read only</span>
                             </div>
                         </td>
@@ -148,9 +202,50 @@ async function toggle(d) {
     sending.value[d.id] = true
     try {
         const { data } = await axios.post('/api/commands', { device_id: d.id, action })
-        d.status = data.device.status
+        d.status   = data.device.status
+        d.settings = data.device.settings
     } catch {
         d.status = prevStatus
+    } finally {
+        delete sending.value[d.id]
+    }
+}
+
+async function adjustTemperature(d, delta) {
+    const current = d.settings?.target_temperature ?? 20
+    const target  = Math.min(35, Math.max(10, current + delta))
+    const prev    = { ...(d.settings ?? {}) }
+    d.settings    = { ...prev, target_temperature: target }
+    sending.value[d.id] = true
+    try {
+        const { data } = await axios.post('/api/commands', {
+            device_id: d.id,
+            action:    'set_temperature',
+            settings:  { target_temperature: target },
+        })
+        d.settings = data.device.settings
+    } catch {
+        d.settings = prev
+    } finally {
+        delete sending.value[d.id]
+    }
+}
+
+async function adjustPosition(d, delta) {
+    const current = d.settings?.position ?? 50
+    const target  = Math.min(100, Math.max(0, current + delta))
+    const prev    = { ...(d.settings ?? {}) }
+    d.settings    = { ...prev, position: target }
+    sending.value[d.id] = true
+    try {
+        const { data } = await axios.post('/api/commands', {
+            device_id: d.id,
+            action:    'set_position',
+            settings:  { position: target },
+        })
+        d.settings = data.device.settings
+    } catch {
+        d.settings = prev
     } finally {
         delete sending.value[d.id]
     }

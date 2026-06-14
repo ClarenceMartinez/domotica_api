@@ -10,7 +10,9 @@ class Device extends Model
 {
     protected $table = 'devices';
 
-    protected $fillable = ['address_id', 'name', 'type', 'status'];
+    protected $fillable = ['address_id', 'name', 'type', 'status', 'settings'];
+
+    protected $casts = ['settings' => 'array'];
 
     public function address(): BelongsTo
     {
