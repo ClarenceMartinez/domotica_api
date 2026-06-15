@@ -24,7 +24,7 @@ class StoreCommandRequest extends FormRequest
             'device_id'                   => ['required', 'integer', 'exists:devices,id'],
             'action'                      => ['required', 'string', 'in:turn_on,turn_off,open,close,activate,deactivate,set_temperature,set_position'],
             'settings'                    => ['sometimes', 'array'],
-            'settings.target_temperature' => ['sometimes', 'numeric', 'min:10', 'max:35'],
+            'settings.target_temperature' => ['sometimes', 'numeric', 'min:32', 'max:122'],
             'settings.position'           => ['sometimes', 'integer', 'min:0', 'max:100'],
         ];
     }

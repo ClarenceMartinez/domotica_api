@@ -54,7 +54,7 @@
                                 </span>
                                 <span v-if="d.type === 'heating' && d.settings?.target_temperature !== undefined"
                                       class="text-xs text-gray-500 px-2.5">
-                                    Target: {{ d.settings.target_temperature }}°C
+                                    Target: {{ d.settings.target_temperature }}°F
                                 </span>
                                 <span v-if="d.type === 'blind' && d.settings?.position !== undefined"
                                       class="text-xs text-gray-500 px-2.5">
@@ -70,7 +70,7 @@
                                                 :disabled="!!sending[d.id]"
                                                 class="w-6 h-6 rounded bg-gray-800 border border-gray-700 text-gray-400 hover:text-white text-sm leading-none transition-colors disabled:opacity-40">−</button>
                                         <span class="w-12 text-center text-xs text-gray-300">
-                                            {{ d.settings?.target_temperature !== undefined ? d.settings.target_temperature + '°C' : '--' }}
+                                            {{ d.settings?.target_temperature !== undefined ? d.settings.target_temperature + '°F' : '--' }}
                                         </span>
                                         <button @click="adjustTemperature(d, 1)"
                                                 :disabled="!!sending[d.id]"
@@ -157,8 +157,8 @@ const icons = {
     heating:       'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
 }
 
-const activeStatuses  = ['on', 'open', 'active']
-const controllable    = ['light', 'blind', 'heating']
+const activeStatuses = ['on', 'open', 'active']
+const controllable   = ['light', 'blind', 'heating']
 
 const actionFor = {
     on:       'turn_off',
@@ -178,9 +178,9 @@ const statusFor = {
     deactivate: 'inactive',
 }
 
-function isActive(d)        { return activeStatuses.includes(d.status) }
-function isControllable(t)  { return controllable.includes(t) }
-function capitalize(s)      { return s ? s.charAt(0).toUpperCase() + s.slice(1) : '' }
+function isActive(d)       { return activeStatuses.includes(d.status) }
+function isControllable(t) { return controllable.includes(t) }
+function capitalize(s)     { return s ? s.charAt(0).toUpperCase() + s.slice(1) : '' }
 
 async function load() {
     loading.value = true
@@ -195,7 +195,34 @@ async function load() {
     }
 }
 
+async function calibrateHeating(d, patch) {
+    const prevStatus   = d.status
+    const prevSettings = { ...(d.settings ?? {}) }
+    const payload = {
+        heating_status:     patch.heating_status     ?? prevStatus,
+        target_temperature: patch.target_temperature ?? prevSettings.target_temperature ?? 68,
+        heating_mode:       prevSettings.heating_mode ?? 'manual',
+    }
+    if (patch.heating_status)              d.status = patch.heating_status
+    if (patch.target_temperature !== undefined) d.settings = { ...prevSettings, target_temperature: patch.target_temperature }
+    sending.value[d.id] = true
+    try {
+        const { data } = await axios.patch(`/api/heating/${props.addressId}/calibrate`, payload)
+        d.status   = data.heating_status
+        d.settings = { target_temperature: data.target_temperature, heating_mode: data.heating_mode }
+    } catch {
+        d.status   = prevStatus
+        d.settings = prevSettings
+    } finally {
+        delete sending.value[d.id]
+    }
+}
+
 async function toggle(d) {
+    if (d.type === 'heating') {
+        await calibrateHeating(d, { heating_status: isActive(d) ? 'off' : 'on' })
+        return
+    }
     const action     = actionFor[d.status]
     const prevStatus = d.status
     d.status = statusFor[action]
@@ -212,23 +239,9 @@ async function toggle(d) {
 }
 
 async function adjustTemperature(d, delta) {
-    const current = d.settings?.target_temperature ?? 20
-    const target  = Math.min(35, Math.max(10, current + delta))
-    const prev    = { ...(d.settings ?? {}) }
-    d.settings    = { ...prev, target_temperature: target }
-    sending.value[d.id] = true
-    try {
-        const { data } = await axios.post('/api/commands', {
-            device_id: d.id,
-            action:    'set_temperature',
-            settings:  { target_temperature: target },
-        })
-        d.settings = data.device.settings
-    } catch {
-        d.settings = prev
-    } finally {
-        delete sending.value[d.id]
-    }
+    const current = d.settings?.target_temperature ?? 68
+    const target  = Math.min(122, Math.max(32, current + delta))
+    await calibrateHeating(d, { target_temperature: target })
 }
 
 async function adjustPosition(d, delta) {
