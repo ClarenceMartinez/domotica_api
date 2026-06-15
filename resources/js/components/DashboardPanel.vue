@@ -391,8 +391,8 @@ function openHeatingModal() {
 async function saveHeating() {
     heatingLoading.value = true
     try {
-        const { data } = await axios.patch(`/api/heating/${addressId.value}/calibrate`, heatingForm.value)
-        temperature.value = { ...temperature.value, ...{ status: data.heating_status, mode: data.heating_mode, target: data.target_temperature } }
+        await axios.patch(`/api/heating/${addressId.value}/calibrate`, heatingForm.value)
+        await fetchHeating(addressId.value)
         heatingModal.value = false
     } catch (e) {
         alert('Could not save heating settings. Please try again.')
