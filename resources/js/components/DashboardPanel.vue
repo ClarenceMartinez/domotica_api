@@ -485,7 +485,7 @@ async function fetchHeating(addressId) {
         const { data } = await axios.get(`/api/heating/${addressId}`)
         if (!data) return
         temperature.value = {
-            value:    Math.round((data.temperature_c * 9 / 5) + 32) || 0,
+            value:    data.target_temperature ?? 0,
             humidity: data.humidity ?? 0,
             status:   data.heating_status,
             mode:     data.heating_mode,

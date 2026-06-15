@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\DeviceResource;
 use App\Models\Address;
 use App\Models\Device;
+use App\Models\HeatingReading;
 
 class DeviceController extends Controller
 {
@@ -25,6 +26,15 @@ class DeviceController extends Controller
             ->orderBy('type')
             ->orderBy('name')
             ->get();
+
+        if ($devices->contains('type', 'heating')) {
+            $reading = HeatingReading::where('address_id', $address_id)->first();
+            $devices->each(function ($device) use ($reading) {
+                if ($device->type === 'heating') {
+                    $device->setRelation('heatingReading', $reading);
+                }
+            });
+        }
 
         return DeviceResource::collection($devices);
     }

@@ -41,7 +41,7 @@ class AddressController extends Controller
      */
     public function state(int $address_id)
     {
-        $address = Address::with('devices')->findOrFail($address_id);
+        $address = Address::with(['devices', 'heatingReading'])->findOrFail($address_id);
 
         $commands = [];
 
@@ -50,10 +50,12 @@ class AddressController extends Controller
             $active = in_array($device->status, self::ACTIVE_STATUSES);
 
             if ($device->type === 'heating') {
-                $value = ['status' => $active];
-                if (isset($device->settings['target_temperature'])) {
-                    $value['target_temperature'] = $device->settings['target_temperature'];
-                }
+                $r     = $address->heatingReading;
+                $value = [
+                    'status'             => $r?->heating_status ?? ($active ? 'on' : 'off'),
+                    'heating_mode'       => $r?->heating_mode,
+                    'target_temperature' => $r?->target_temperature,
+                ];
             } elseif ($device->type === 'blind') {
                 $value = $device->settings['position'] ?? ($active ? 100 : 0);
             } else {
