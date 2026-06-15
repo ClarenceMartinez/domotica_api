@@ -54,6 +54,7 @@
                     <div class="bg-[#111827] border border-gray-800 rounded-xl p-5 relative overflow-hidden">
                         <p class="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-3">Outside climate</p>
                         <div v-if="climate">
+                            <p v-if="climate.city" class="text-xs text-gray-500 mb-1">{{ climate.city }}</p>
                             <p class="text-3xl font-bold text-white">{{ climate.temp }}°C</p>
                             <p class="text-sm text-gray-400">{{ climate.description }}</p>
                             <p class="text-xs text-gray-600 mt-2">Humidity: {{ climate.humidity }}% · Wind: {{ climate.wind }} km/h</p>
@@ -494,22 +495,42 @@ async function fetchHeating(addressId) {
     }
 }
 
+async function fetchCityName(lat, lon) {
+    try {
+        const { data } = await axios.get('https://nominatim.openstreetmap.org/reverse', {
+            params: { lat, lon, format: 'json' },
+            headers: { 'Accept-Language': 'en' },
+        })
+        return data.address?.city
+            || data.address?.town
+            || data.address?.village
+            || data.address?.county
+            || null
+    } catch {
+        return null
+    }
+}
+
 async function fetchClimate(lat, lon) {
     if (!lat || !lon) return
     try {
-        const { data } = await axios.get('https://api.open-meteo.com/v1/forecast', {
-            params: {
-                latitude: lat,
-                longitude: lon,
-                current: 'temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code',
-            },
-        })
-        const c = data.current
+        const [weatherRes, city] = await Promise.all([
+            axios.get('https://api.open-meteo.com/v1/forecast', {
+                params: {
+                    latitude: lat,
+                    longitude: lon,
+                    current: 'temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code',
+                },
+            }),
+            fetchCityName(lat, lon),
+        ])
+        const c = weatherRes.data.current
         climate.value = {
             temp:        Math.round(c.temperature_2m),
             humidity:    c.relative_humidity_2m,
             wind:        Math.round(c.wind_speed_10m),
             description: weatherCodeToDescription(c.weather_code),
+            city,
         }
     } catch {
         climate.value = null
