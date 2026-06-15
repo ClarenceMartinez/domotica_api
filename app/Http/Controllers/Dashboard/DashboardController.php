@@ -9,7 +9,7 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $clients = Client::with(['addresses' => fn ($q) => $q->select('id', 'client_id', 'alias')])
+        $clients = Client::with(['addresses' => fn ($q) => $q->select('id', 'client_id', 'alias', 'latitude', 'longitude')])
             ->orderBy('name')
             ->get(['id', 'name']);
 

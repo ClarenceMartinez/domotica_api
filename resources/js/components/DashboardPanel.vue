@@ -61,7 +61,6 @@
                         <div v-else class="space-y-2">
                             <p class="text-3xl font-bold text-gray-700">—°C</p>
                             <p class="text-xs text-gray-700">Humidity: — · Wind: —</p>
-                            <span class="inline-block text-[10px] font-medium bg-gray-800 text-gray-600 px-2 py-0.5 rounded-full mt-1">Coming soon</span>
                         </div>
                         <svg class="absolute right-4 bottom-4 w-10 h-10 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
@@ -85,17 +84,28 @@
                         </svg>
                     </div>
 
-                    <!-- Indoor temperature (placeholder) -->
+                    <!-- Indoor temperature -->
                     <div class="bg-[#111827] border border-gray-800 rounded-xl p-5 relative overflow-hidden">
-                        <p class="text-xs font-semibold text-orange-400 uppercase tracking-wider mb-3">Indoor temperature</p>
+                        <div class="flex items-center justify-between mb-3">
+                            <p class="text-xs font-semibold text-orange-400 uppercase tracking-wider">Indoor temperature</p>
+                            <button v-if="temperature" @click="openHeatingModal"
+                                    class="text-[10px] font-medium text-gray-500 hover:text-orange-400 border border-gray-700 hover:border-orange-800 rounded-md px-2 py-0.5 transition-colors">
+                                Calibrate
+                            </button>
+                        </div>
                         <div v-if="temperature">
-                            <p class="text-3xl font-bold text-white">{{ temperature.value }}°C</p>
-                            <p class="text-xs text-gray-500 mt-1">{{ temperature.location }}</p>
+                            <p class="text-3xl font-bold text-white">{{ temperature.value }}°F</p>
+                            <p class="text-xs text-gray-500 mt-1">
+                                Humidity: {{ temperature.humidity }}% ·
+                                <span :class="temperature.status === 'on' ? 'text-orange-400' : 'text-gray-500'">
+                                    Heating {{ temperature.status }}
+                                </span>
+                            </p>
+                            <p class="text-xs text-gray-600 mt-1">{{ temperature.device }}</p>
                         </div>
                         <div v-else class="space-y-2">
-                            <p class="text-3xl font-bold text-gray-700">—°C</p>
+                            <p class="text-3xl font-bold text-gray-700">0°F</p>
                             <p class="text-xs text-gray-700">No sensor connected</p>
-                            <span class="inline-block text-[10px] font-medium bg-gray-800 text-gray-600 px-2 py-0.5 rounded-full mt-1">Coming soon</span>
                         </div>
                         <svg class="absolute right-4 bottom-4 w-10 h-10 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
@@ -259,6 +269,90 @@
             </template>
         </template>
 
+    <!-- Heating calibration modal -->
+    <Teleport to="body">
+        <div v-if="heatingModal" class="fixed inset-0 z-50 flex items-center justify-center">
+            <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="heatingModal = false"></div>
+            <div class="relative bg-[#111827] border border-gray-700 rounded-2xl p-6 w-full max-w-sm shadow-xl">
+
+                <div class="flex items-center justify-between mb-5">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wide">Calibrate heating</h2>
+                    <button @click="heatingModal = false" class="text-gray-600 hover:text-gray-400 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="space-y-4">
+
+                    <!-- Target temperature -->
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1.5">Target temperature (°F)</label>
+                        <input v-model.number="heatingForm.target_temperature"
+                               type="number" min="32" max="122" step="1"
+                               class="w-full bg-[#0d1117] border border-gray-700 text-white text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-orange-500"/>
+                    </div>
+
+                    <!-- Heating mode -->
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1.5">Mode</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button @click="heatingForm.heating_mode = 'manual'"
+                                    class="py-2 text-xs font-semibold rounded-lg border transition-colors"
+                                    :class="heatingForm.heating_mode === 'manual'
+                                        ? 'bg-orange-900/30 border-orange-700 text-orange-400'
+                                        : 'bg-transparent border-gray-700 text-gray-500 hover:border-gray-600'">
+                                Manual
+                            </button>
+                            <button @click="heatingForm.heating_mode = 'auto'"
+                                    class="py-2 text-xs font-semibold rounded-lg border transition-colors"
+                                    :class="heatingForm.heating_mode === 'auto'
+                                        ? 'bg-orange-900/30 border-orange-700 text-orange-400'
+                                        : 'bg-transparent border-gray-700 text-gray-500 hover:border-gray-600'">
+                                Auto
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Heating status -->
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1.5">Heating</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button @click="heatingForm.heating_status = 'on'"
+                                    class="py-2 text-xs font-semibold rounded-lg border transition-colors"
+                                    :class="heatingForm.heating_status === 'on'
+                                        ? 'bg-orange-900/30 border-orange-700 text-orange-400'
+                                        : 'bg-transparent border-gray-700 text-gray-500 hover:border-gray-600'">
+                                On
+                            </button>
+                            <button @click="heatingForm.heating_status = 'off'"
+                                    class="py-2 text-xs font-semibold rounded-lg border transition-colors"
+                                    :class="heatingForm.heating_status === 'off'
+                                        ? 'bg-gray-800 border-gray-600 text-gray-300'
+                                        : 'bg-transparent border-gray-700 text-gray-500 hover:border-gray-600'">
+                                Off
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="flex gap-2 mt-6">
+                    <button @click="heatingModal = false"
+                            class="flex-1 py-2.5 text-xs font-semibold text-gray-400 border border-gray-700 rounded-lg hover:border-gray-600 transition-colors">
+                        Cancel
+                    </button>
+                    <button @click="saveHeating" :disabled="heatingLoading"
+                            class="flex-1 py-2.5 text-xs font-semibold text-white bg-orange-600 hover:bg-orange-500 disabled:opacity-50 rounded-lg transition-colors">
+                        {{ heatingLoading ? 'Saving…' : 'Save' }}
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </Teleport>
+
     </div>
 </template>
 
@@ -276,10 +370,33 @@ const devices   = ref([])
 const loading   = ref(false)
 const sending   = ref({})
 
-// Placeholders — ready to wire to their APIs
-const climate     = ref(null)   // GET /api/climate/{address_id}
-const consumption = ref(null)   // GET /api/consumption/{address_id}
-const temperature = ref(null)   // from heating sensor
+const climate     = ref(null)
+const consumption = ref(null)
+const temperature = ref(null)
+
+const heatingModal   = ref(false)
+const heatingForm    = ref({ target_temperature: 0, heating_mode: 'manual', heating_status: 'off' })
+const heatingLoading = ref(false)
+
+function openHeatingModal() {
+    heatingForm.value = {
+        target_temperature: temperature.value?.target ?? 68,
+        heating_mode:       temperature.value?.mode   ?? 'manual',
+        heating_status:     temperature.value?.status ?? 'off',
+    }
+    heatingModal.value = true
+}
+
+async function saveHeating() {
+    heatingLoading.value = true
+    try {
+        const { data } = await axios.patch(`/api/heating/${addressId.value}/calibrate`, heatingForm.value)
+        temperature.value = { ...temperature.value, ...{ status: data.heating_status, mode: data.heating_mode, target: data.target_temperature } }
+        heatingModal.value = false
+    } finally {
+        heatingLoading.value = false
+    }
+}
 
 const scenes = ['Night mode', 'Party mode', 'Leaving home', 'Arriving home']
 
@@ -346,6 +463,59 @@ function onClientChange() {
     temperature.value = null
 }
 
+function weatherCodeToDescription(code) {
+    if (code === 0)              return 'Clear sky'
+    if (code <= 2)               return 'Partly cloudy'
+    if (code === 3)              return 'Overcast'
+    if (code <= 49)              return 'Foggy'
+    if (code <= 59)              return 'Drizzle'
+    if (code <= 69)              return 'Rain'
+    if (code <= 79)              return 'Snow'
+    if (code <= 82)              return 'Rain showers'
+    if (code <= 86)              return 'Snow showers'
+    if (code <= 99)              return 'Thunderstorm'
+    return 'Unknown'
+}
+
+async function fetchHeating(addressId) {
+    try {
+        const { data } = await axios.get(`/api/heating/${addressId}`)
+        if (!data) return
+        temperature.value = {
+            value:    Math.round((data.temperature_c * 9 / 5) + 32) || 0,
+            humidity: data.humidity ?? 0,
+            status:   data.heating_status,
+            mode:     data.heating_mode,
+            target:   data.target_temperature ?? 0,
+            device:   data.device,
+        }
+    } catch {
+        temperature.value = null
+    }
+}
+
+async function fetchClimate(lat, lon) {
+    if (!lat || !lon) return
+    try {
+        const { data } = await axios.get('https://api.open-meteo.com/v1/forecast', {
+            params: {
+                latitude: lat,
+                longitude: lon,
+                current: 'temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code',
+            },
+        })
+        const c = data.current
+        climate.value = {
+            temp:        Math.round(c.temperature_2m),
+            humidity:    c.relative_humidity_2m,
+            wind:        Math.round(c.wind_speed_10m),
+            description: weatherCodeToDescription(c.weather_code),
+        }
+    } catch {
+        climate.value = null
+    }
+}
+
 async function onAddressChange() {
     if (!addressId.value) return
     loading.value  = true
@@ -353,9 +523,14 @@ async function onAddressChange() {
     climate.value  = null
     consumption.value = null
     temperature.value = null
+    const address = clientAddresses.value.find(a => a.id == addressId.value)
     try {
-        const { data } = await axios.get(`/api/devices/${addressId.value}`)
-        devices.value = data.data
+        const [devicesRes, heatingRes] = await Promise.all([
+            axios.get(`/api/devices/${addressId.value}`),
+            fetchClimate(address?.latitude, address?.longitude),
+            fetchHeating(addressId.value),
+        ])
+        devices.value = devicesRes.data.data
     } finally {
         loading.value = false
     }
