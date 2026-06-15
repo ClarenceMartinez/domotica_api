@@ -44,13 +44,25 @@ class HeatingController extends Controller
             'heating_status'     => 'required|in:on,off',
         ]);
 
-        $reading = HeatingReading::where('address_id', $addressId)->firstOrFail();
+        $reading = HeatingReading::where('address_id', $addressId)->first();
 
-        $reading->update([
-            'target_temperature' => $data['target_temperature'],
-            'heating_mode'       => $data['heating_mode'],
-            'heating_status'     => $data['heating_status'],
-        ]);
+        if ($reading) {
+            $reading->update([
+                'target_temperature' => $data['target_temperature'],
+                'heating_mode'       => $data['heating_mode'],
+                'heating_status'     => $data['heating_status'],
+            ]);
+        } else {
+            $reading = HeatingReading::create([
+                'address_id'         => $addressId,
+                'temperature_c'      => 0,
+                'humidity'           => 0,
+                'heating_status'     => $data['heating_status'],
+                'heating_mode'       => $data['heating_mode'],
+                'target_temperature' => $data['target_temperature'],
+                'read_at'            => now(),
+            ]);
+        }
 
         // TODO: forward calibration to Pico W when its endpoint is available
         // Http::post("http://{$picoIp}/calibrate", $data);
