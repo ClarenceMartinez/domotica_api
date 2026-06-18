@@ -22,6 +22,7 @@
             <table class="w-full text-sm">
                 <thead>
                     <tr class="border-b border-gray-800">
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -30,6 +31,7 @@
                 </thead>
                 <tbody class="divide-y divide-gray-800">
                     <tr v-for="d in devices" :key="d.id" class="hover:bg-gray-800/40 transition-colors">
+                        <td class="px-3 py-4 text-gray-400">{{ d.id }}</td>
                         <td class="px-6 py-4">
                             <div class="flex items-center gap-3">
                                 <div class="w-8 h-8 rounded-lg bg-gray-800 border border-gray-700 flex items-center justify-center shrink-0"
@@ -86,24 +88,22 @@
                                 </template>
 
                                 <template v-else-if="d.type === 'blind'">
-                                    <div class="flex items-center gap-1">
-                                        <button @click="adjustPosition(d, -10)"
-                                                :disabled="!!sending[d.id]"
-                                                class="w-6 h-6 rounded bg-gray-800 border border-gray-700 text-gray-400 hover:text-white text-sm leading-none transition-colors disabled:opacity-40">−</button>
-                                        <span class="w-10 text-center text-xs text-gray-300">
-                                            {{ d.settings?.position !== undefined ? d.settings.position + '%' : '--' }}
-                                        </span>
-                                        <button @click="adjustPosition(d, 10)"
-                                                :disabled="!!sending[d.id]"
-                                                class="w-6 h-6 rounded bg-gray-800 border border-gray-700 text-gray-400 hover:text-white text-sm leading-none transition-colors disabled:opacity-40">+</button>
+                                    <div class="flex gap-2">
+                                        <button @click="sendCommand(d, 'open')"
+                                                :disabled="d.status === 'open' || !!sending[d.id]"
+                                                class="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors
+                                                       disabled:opacity-30 disabled:cursor-not-allowed
+                                                       border-green-800/60 text-green-400 hover:bg-green-900/30">
+                                            Abrir
+                                        </button>
+                                        <button @click="sendCommand(d, 'close')"
+                                                :disabled="d.status === 'closed' || !!sending[d.id]"
+                                                class="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors
+                                                       disabled:opacity-30 disabled:cursor-not-allowed
+                                                       border-gray-700 text-gray-400 hover:bg-gray-800">
+                                            Cerrar
+                                        </button>
                                     </div>
-                                    <button @click="toggle(d)"
-                                            :disabled="!!sending[d.id]"
-                                            class="relative inline-flex items-center h-5 w-9 rounded-full transition-colors focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                                            :class="isActive(d) ? 'bg-blue-600' : 'bg-gray-700'">
-                                        <span class="inline-block w-3.5 h-3.5 transform rounded-full bg-white transition-transform"
-                                              :class="isActive(d) ? 'translate-x-4' : 'translate-x-1'"></span>
-                                    </button>
                                 </template>
 
                                 <template v-else-if="isControllable(d.type)">
@@ -146,6 +146,8 @@ const labels = {
     window_sensor: 'Window sensor',
     camera:        'Camera',
     heating:       'Heating',
+    smart_outlet: 'Smart outlet',
+    gas: 'Gas sensor',
 }
 
 const icons = {
@@ -242,6 +244,21 @@ async function adjustTemperature(d, delta) {
     const current = d.settings?.target_temperature ?? 68
     const target  = Math.min(122, Math.max(32, current + delta))
     await calibrateHeating(d, { target_temperature: target })
+}
+
+async function sendCommand(d, action) {
+    const prevStatus = d.status
+    d.status = statusFor[action]
+    sending.value[d.id] = true
+    try {
+        const { data } = await axios.post('/api/commands', { device_id: d.id, action })
+        d.status   = data.device.status
+        d.settings = data.device.settings
+    } catch {
+        d.status = prevStatus
+    } finally {
+        delete sending.value[d.id]
+    }
 }
 
 async function adjustPosition(d, delta) {

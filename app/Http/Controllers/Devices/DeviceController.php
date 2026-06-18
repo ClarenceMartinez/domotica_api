@@ -19,6 +19,8 @@ class DeviceController extends Controller
             'window_sensor' => 'Window sensor',
             'camera'        => 'Camera',
             'heating'       => 'Heating',
+            'smart_outlet'  => 'Outlet',
+            'gas' => 'Gas sensor',
         ];
     }
 

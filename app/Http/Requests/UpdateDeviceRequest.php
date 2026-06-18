@@ -12,7 +12,7 @@ class UpdateDeviceRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:100'],
-            'type' => ['required', 'in:light,blind,door_sensor,window_sensor,camera,heating'],
+            'type' => ['required', 'in:light,blind,door_sensor,window_sensor,camera,heating,smart_outlet,gas'],
         ];
     }
 }

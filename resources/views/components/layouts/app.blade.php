@@ -68,8 +68,31 @@
         </nav>
 
         {{-- Footer sidebar --}}
-        <div class="px-5 py-4 border-t border-gray-800">
-            <p class="text-xs text-gray-600">© 2024 Casa Inteligente</p>
+        <div class="px-4 py-4 border-t border-gray-800 space-y-3">
+
+            {{-- Usuario --}}
+            <div class="flex items-center gap-2 px-1">
+                <div class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white shrink-0">
+                    {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                </div>
+                <span class="text-xs text-gray-400 truncate">{{ auth()->user()->name }}</span>
+            </div>
+
+            {{-- Logout --}}
+            <form action="{{ route('logout') }}" method="POST">
+                @csrf
+                <button type="submit"
+                        class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
+                               text-gray-400 hover:bg-gray-800 hover:text-white transition-colors">
+                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                    </svg>
+                    Cerrar sesión
+                </button>
+            </form>
+
+            <p class="text-xs text-gray-600 px-1">© {{ now()->year }} Smart Houuse</p>
         </div>
 
     </aside>
