@@ -19,18 +19,61 @@
         </div>
 
         <div v-else class="bg-[#111827] border border-gray-800 rounded-xl overflow-hidden">
+            <!-- Toolbar -->
+            <div class="flex gap-3 p-3 border-b border-gray-800">
+                <div class="relative flex-1">
+                    <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none"
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/>
+                    </svg>
+                    <input v-model="search" type="text" placeholder="Search by name…"
+                           class="w-full bg-gray-800 border border-gray-700 rounded-lg pl-8 pr-3 py-1.5
+                                  text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-600"/>
+                </div>
+                <select v-model="typeFilter"
+                        class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5
+                               text-sm text-gray-300 focus:outline-none focus:border-blue-600">
+                    <option value="">All types</option>
+                    <option v-for="(label, key) in labels" :key="key" :value="key">{{ label }}</option>
+                </select>
+            </div>
+
             <table class="w-full text-sm">
                 <thead>
                     <tr class="border-b border-gray-800">
-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-3 py-3 text-left">
+                            <button @click="setSort('id')"
+                                    class="flex items-center gap-1 text-xs font-medium text-gray-500 uppercase hover:text-gray-300 transition-colors">
+                                ID <SortIcon col="id" :sortKey="sortKey" :sortDir="sortDir"/>
+                            </button>
+                        </th>
+                        <th class="px-6 py-3 text-left">
+                            <button @click="setSort('name')"
+                                    class="flex items-center gap-1 text-xs font-medium text-gray-500 uppercase tracking-wider hover:text-gray-300 transition-colors">
+                                Device <SortIcon col="name" :sortKey="sortKey" :sortDir="sortDir"/>
+                            </button>
+                        </th>
+                        <th class="px-6 py-3 text-left">
+                            <button @click="setSort('type')"
+                                    class="flex items-center gap-1 text-xs font-medium text-gray-500 uppercase tracking-wider hover:text-gray-300 transition-colors">
+                                Type <SortIcon col="type" :sortKey="sortKey" :sortDir="sortDir"/>
+                            </button>
+                        </th>
+                        <th class="px-6 py-3 text-left">
+                            <button @click="setSort('status')"
+                                    class="flex items-center gap-1 text-xs font-medium text-gray-500 uppercase tracking-wider hover:text-gray-300 transition-colors">
+                                Status <SortIcon col="status" :sortKey="sortKey" :sortDir="sortDir"/>
+                            </button>
+                        </th>
                         <th class="px-6 py-3"></th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-800">
-                    <tr v-for="d in devices" :key="d.id" class="hover:bg-gray-800/40 transition-colors">
+                    <tr v-if="paginated.length === 0">
+                        <td colspan="5" class="px-6 py-8 text-center text-sm text-gray-600">No devices match the current filter.</td>
+                    </tr>
+                    <tr v-for="d in paginated" :key="d.id" class="hover:bg-gray-800/40 transition-colors">
                         <td class="px-3 py-4 text-gray-400">{{ d.id }}</td>
                         <td class="px-6 py-4">
                             <div class="flex items-center gap-3">
@@ -122,22 +165,97 @@
                     </tr>
                 </tbody>
             </table>
+
+            <!-- Pagination -->
+            <div v-if="pageCount > 1 || filtered.length > 0"
+                 class="flex items-center justify-between px-4 py-3 border-t border-gray-800">
+                <p class="text-xs text-gray-500">
+                    {{ filtered.length }} device{{ filtered.length !== 1 ? 's' : '' }}
+                    <template v-if="filtered.length !== devices.length"> (filtered from {{ devices.length }})</template>
+                </p>
+                <div class="flex items-center gap-2">
+                    <button @click="page--" :disabled="page === 1"
+                            class="px-2.5 py-1 text-xs rounded-lg border border-gray-700 text-gray-400
+                                   hover:text-white hover:border-gray-600 transition-colors
+                                   disabled:opacity-30 disabled:cursor-not-allowed">
+                        ‹ Prev
+                    </button>
+                    <span class="text-xs text-gray-500">{{ page }} / {{ pageCount }}</span>
+                    <button @click="page++" :disabled="page === pageCount"
+                            class="px-2.5 py-1 text-xs rounded-lg border border-gray-700 text-gray-400
+                                   hover:text-white hover:border-gray-600 transition-colors
+                                   disabled:opacity-30 disabled:cursor-not-allowed">
+                        Next ›
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import axios from 'axios'
+
+const SortIcon = {
+    props: ['col', 'sortKey', 'sortDir'],
+    template: `
+        <span class="inline-flex flex-col -space-y-1 ml-0.5">
+            <i class="ri-arrow-up-s-fill text-[11px] leading-none transition-colors"
+               :class="sortKey === col && sortDir === 'asc' ? 'text-blue-400' : 'text-gray-600'"></i>
+            <i class="ri-arrow-down-s-fill text-[11px] leading-none transition-colors"
+               :class="sortKey === col && sortDir === 'desc' ? 'text-blue-400' : 'text-gray-600'"></i>
+        </span>
+    `,
+}
+
+const PAGE_SIZE = 20
 
 const props = defineProps({
     addressId: { type: String, required: true },
 })
 
-const devices = ref([])
-const loading = ref(true)
-const error   = ref(null)
-const sending = ref({})
+const devices    = ref([])
+const loading    = ref(true)
+const error      = ref(null)
+const sending    = ref({})
+
+const search     = ref('')
+const typeFilter = ref('')
+const sortKey    = ref('id')
+const sortDir    = ref('asc')
+const page       = ref(1)
+
+const filtered = computed(() => {
+    const q    = search.value.trim().toLowerCase()
+    const type = typeFilter.value
+    let list   = devices.value
+    if (q)    list = list.filter(d => d.name.toLowerCase().includes(q))
+    if (type) list = list.filter(d => d.type === type)
+    return [...list].sort((a, b) => {
+        const av = sortKey.value === 'name' ? a.name.toLowerCase()
+                 : sortKey.value === 'type' ? (labels[a.type] ?? a.type).toLowerCase()
+                 : sortKey.value === 'status' ? a.status.toLowerCase()
+                 : a.id
+        const bv = sortKey.value === 'name' ? b.name.toLowerCase()
+                 : sortKey.value === 'type' ? (labels[b.type] ?? b.type).toLowerCase()
+                 : sortKey.value === 'status' ? b.status.toLowerCase()
+                 : b.id
+        if (av < bv) return sortDir.value === 'asc' ? -1 : 1
+        if (av > bv) return sortDir.value === 'asc' ?  1 : -1
+        return 0
+    })
+})
+
+const pageCount = computed(() => Math.max(1, Math.ceil(filtered.value.length / PAGE_SIZE)))
+const paginated = computed(() => filtered.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE))
+
+watch([search, typeFilter, sortKey, sortDir], () => { page.value = 1 })
+
+function setSort(key) {
+    if (sortKey.value === key) sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+    else { sortKey.value = key; sortDir.value = 'asc' }
+}
 
 const labels = {
     light:         'Light',
@@ -190,6 +308,7 @@ async function load() {
     try {
         const { data } = await axios.get(`/api/devices/${props.addressId}`)
         devices.value = data.data
+        page.value    = 1
     } catch {
         error.value = 'Could not load devices.'
     } finally {
